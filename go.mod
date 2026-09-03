@@ -1,4 +1,4 @@
-module github.com/go-linux/fido
+module github.com/go-gnulinux/fido
 
 go 1.26.4
 

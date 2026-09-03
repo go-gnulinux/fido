@@ -1,8 +1,8 @@
 # fido
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/go-linux/fido.svg)](https://pkg.go.dev/github.com/go-linux/fido)
+[![Go Reference](https://pkg.go.dev/badge/github.com/go-gnulinux/fido.svg)](https://pkg.go.dev/github.com/go-gnulinux/fido)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-0A6E96?style=flat-square)](LICENSE)
-[![CI](https://github.com/go-linux/fido/actions/workflows/ci.yml/badge.svg)](https://github.com/go-linux/fido/actions/workflows/ci.yml)
+[![CI](https://github.com/go-gnulinux/fido/actions/workflows/ci.yml/badge.svg)](https://github.com/go-gnulinux/fido/actions/workflows/ci.yml)
 
 Reaches a FIDO security key on Linux, over `hidraw`, in pure Go with
 `CGO_ENABLED=0`.

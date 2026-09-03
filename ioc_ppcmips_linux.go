@@ -1,4 +1,4 @@
-// Copyright (c) the go-linux authors. All rights reserved.
+// Copyright (c) the go-gnulinux authors. All rights reserved.
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
