@@ -1,7 +1,12 @@
-# A captured fixture must be the SAME BYTES on every machine.
+# This repository's text is LF, everywhere, whoever checks it out.
 #
-# Git rewrites line endings on checkout by default, and on Windows that turns
-# every "\n" in this file into "\r\n". The descriptors themselves are hex, so
-# the damage lands on the line ends and hex decoding fails -- which is how it
-# was found. A witness that a checkout may edit is not a witness.
+# Git rewrites line endings on checkout by default, so on Windows every source
+# file arrives with CRLF -- and `gofmt -l` then reports EVERY file as
+# unformatted. This repository's Windows lane only builds, so nothing here
+# would have said so; the sibling go-mswin/webauthn found it the hard way.
+* text=auto eol=lf
+
+# And fixtures are not text at all: they must be the same BYTES on every
+# machine. A witness a checkout may edit is not a witness -- this one failed
+# on Windows with "encoding/hex: invalid byte: U+000D".
 testdata/** -text
