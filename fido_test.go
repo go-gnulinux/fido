@@ -68,7 +68,7 @@ func TestTheParserAgreesWithIOKitOnRealDevices(t *testing.T) {
 		if err != nil {
 			t.Fatalf("testdata page %q: %v", f[0], err)
 		}
-		raw, err := hex.DecodeString(f[2])
+		raw, err := hex.DecodeString(strings.TrimSpace(f[2]))
 		if err != nil {
 			t.Fatalf("testdata bytes for %q: %v", f[1], err)
 		}
@@ -102,7 +102,7 @@ func TestNoneOfThisMachinesDevicesIsASecurityKey(t *testing.T) {
 			continue
 		}
 		f := strings.Split(line, "\t")
-		raw, _ := hex.DecodeString(f[2])
+		raw, _ := hex.DecodeString(strings.TrimSpace(f[2]))
 		if speaksCTAP(raw) {
 			t.Errorf("%s was taken for a security key", f[1])
 		}

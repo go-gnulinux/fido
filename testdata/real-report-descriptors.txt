@@ -3,6 +3,9 @@
 # on 2026-09-03. Nobody here wrote these bytes.
 #
 # Each line is: <PrimaryUsagePage as IOKit computed it> <TAB> <device> <TAB> <hex>
+# Checked out verbatim: see .gitattributes. Git rewriting line endings would
+# corrupt the hex, and a witness a checkout may edit is not a witness.
+#
 # The first field is the INDEPENDENT ANSWER: IOKit parsed the same bytes and
 # said which page the primary collection declares. The parser under test must
 # agree with it, having never seen it.

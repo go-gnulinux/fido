@@ -1,0 +1,7 @@
+# A captured fixture must be the SAME BYTES on every machine.
+#
+# Git rewrites line endings on checkout by default, and on Windows that turns
+# every "\n" in this file into "\r\n". The descriptors themselves are hex, so
+# the damage lands on the line ends and hex decoding fails -- which is how it
+# was found. A witness that a checkout may edit is not a witness.
+testdata/** -text
