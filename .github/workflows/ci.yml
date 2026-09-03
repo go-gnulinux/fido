@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # A workflow that fails to PARSE reports nothing at all: no jobs run, no
+  # checks appear, and the pull request looks unexercised rather than broken.
+  actionlint:
+    name: workflows parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: actionlint
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+
+  linux:
+    name: linux (the real target, CGO=0)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Gofmt
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+      - name: Tidy is committed
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test -coverprofile=cover.out ./...
+      # A runner has no security key, so hidraw_linux.go -- the ioctls, the
+      # poll loop, the writes -- is never reached and the number here is below
+      # 100. The GATE lives on the darwin lane, where the only code compiled is
+      # the portable half plus the stubs, so 100% means all of it.
+      - name: Coverage summary
+        run: go tool cover -func=cover.out | tail -8
+      - name: Race
+        run: CGO_ENABLED=1 go test -race ./...
+
+  darwin:
+    name: darwin (coverage gate on everything that needs no key)
+    runs-on: macos-latest
+    env:
+      CGO_ENABLED: "0"
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test -coverprofile=cover.out .
+      - name: 100% gate
+        run: |
+          go tool cover -func=cover.out | tee full.txt
+          if grep -v '100\.0%' full.txt | grep -v '^total:'; then
+            echo "::error::below 100% (lines above)"; exit 1
+          fi
+
+  windows:
+    name: windows (stub build)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      CGO_ENABLED: "0"
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Build
+        run: go build ./...
+      - name: Test
+        run: go test ./...
+
+  crossbuild:
+    name: cross-build every architecture Linux runs on
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      # The ioctl request numbers are ARITHMETIC, not four hexadecimal literals
+      # per architecture, so they must hold everywhere. Compiling proves the
+      # sizes and the syscall shapes agree; it does not prove the numbers, and
+      # nothing here claims it does.
+      - name: Build
+        run: |
+          for arch in amd64 arm64 arm 386 riscv64 ppc64le s390x loong64 mips64le; do
+            echo "--- linux/$arch"
+            GOOS=linux GOARCH="$arch" go build ./... || exit 1
+          done
