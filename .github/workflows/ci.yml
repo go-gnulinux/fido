@@ -50,6 +50,18 @@ jobs:
       # the portable half plus the stubs, so 100% means all of it.
       - name: Coverage summary
         run: go tool cover -func=cover.out | tail -8
+      # /dev/uhid is the kernel's userspace HID transport: it makes a REAL
+      # hidraw node from a report descriptor, so the wire half of this package
+      # -- the sysfs walk, the ioctl numbers, the report-id byte, the poll loop
+      # -- is exercised here without a security key and without anyone to touch
+      # one. The test SKIPS if the module is missing, and this step says so out
+      # loud rather than letting a skip look like a pass.
+      - name: Load uhid, so the wire test is not skipped
+        run: |
+          sudo modprobe uhid
+          test -c /dev/uhid || { echo "::error::no /dev/uhid after modprobe"; exit 1; }
+      - name: Test against a kernel-made HID device
+        run: sudo -E env "PATH=" go test -run TestAgainstAKernelMadeDevice -v ./...
       - name: Race
         run: CGO_ENABLED=1 go test -race ./...
 
