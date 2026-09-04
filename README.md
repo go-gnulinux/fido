@@ -81,23 +81,42 @@ by one byte. A key answers that with **silence**, not with an error.
 
 ## What is proven, and what is not
 
-**Proven.** The report-descriptor parser is checked against **17 real
-descriptors read off a live machine's HID devices**, with IOKit's own
+**The wire half runs, against a device the kernel makes.** `/dev/uhid` is the
+kernel's userspace HID transport: hand it a report descriptor and it produces a
+*real* hidraw node, indistinguishable from a plugged device to everything above
+it. So the sysfs walk against a real `/sys`, the ioctl **numbers** on the
+running architecture, the usage-page filter, both directions of the wire and the
+poll loop are all exercised — with no security key and nobody to touch one.
+
+    found     go-gnulinux fido test device (1050:0402) at /dev/hidraw0
+    handshake CTAPHID v2, firmware 5.7.4, wink, ctap2, ctap1
+    ping      came back byte for byte
+
+It has run on **aarch64** (Linux 6.11, a local VM) and on **amd64** (the CI
+runner, on every pull request). The test skips where `uhid` is unavailable, and
+the CI step raises a warning naming the kernel when that happens, because a skip
+that looks like a pass is worse than no test.
+
+⭐ **And it corrected something written here.** The report reaches the device as
+**65** bytes whose first is the report id, not 64. hidraw's `write()` ABI is
+`[report id][payload]` — which is what this package sends and what libfido2
+sends — and what differs is *who strips it*: `usbhid` drops the id before the
+wire, so a real key sees 64; `uhid` is a raw transport and passes down what the
+HID core held. The code was right and the description of what a device sees was
+not. The fake strips it and asserts the byte was the id rather than data, so the
+distinction cannot quietly become a fudge.
+
+**The parser has an external witness.** It is checked against **17 real
+descriptors** read off a live machine's HID devices, with IOKit's own
 `PrimaryUsagePage` as the answer — bytes this project did not write and a
-verdict it did not compute. One- and two-byte item widths both appear in them,
-so an item mis-sized by one byte shifts every page and fails the comparison.
-None of those 17 devices is a security key, which is the negative control: a
-filter that said yes to everything would pass the first test and be useless.
+verdict it did not compute. One- and two-byte item widths both appear, so an
+item mis-sized by one byte shifts every page and fails the comparison. None of
+the 17 is a security key, which is the negative control.
 
-Everything that runs without a key is covered to 100%, and the gate says so
-where that is the whole compiled set.
+Everything that runs without a key is covered to 100%.
 
-**Not proven.** `hidraw_linux.go` — the ioctls, the poll loop, the read and the
-write — **has never run against a key**, because the machine this was written on
-is a Mac and no key was attached when the fixtures were made. The FIDO
-descriptor in the tests is written from the specification, not captured, and it
-is labelled as such. Cross-compiling eleven architectures proves the sizes and the syscall shapes
-agree. The ioctl numbers are pinned against the kernel headers by a test, for
-both encodings; what remains unproven is that a real kernel accepts them.
-
-That is the honest state. It wants one run on a Linux machine with a key in it.
+**Not proven: a real security key.** No key has been plugged into a machine
+running this. What a kernel-made device cannot show is the behaviour of an
+actual authenticator — a key that takes its time, that answers `KEEPALIVE` while
+somebody decides whether to touch it, that is unplugged mid-exchange. That still
+wants one run with a key in a Linux machine.
