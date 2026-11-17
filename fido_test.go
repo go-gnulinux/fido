@@ -201,6 +201,12 @@ func TestParseUevent(t *testing.T) {
 	if d.Name != "Yubico YubiKey FIDO+CCID" {
 		t.Errorf("name %q", d.Name)
 	}
+	if d.Phys != "usb-0000:00:14.0-3/input0" || d.Serial != "" {
+		t.Errorf("phys %q serial %q", d.Phys, d.Serial)
+	}
+	if d2, _ := parseUevent("HID_ID=0003:00001050:00000402\nHID_UNIQ= 0123 \n"); d2.Serial != "0123" {
+		t.Errorf("serial %q", d2.Serial)
+	}
 	for _, c := range []struct{ name, in string }{
 		{"no HID_ID at all", "HID_NAME=x\n"},
 		{"too few fields", "HID_ID=0003:00001050\n"},

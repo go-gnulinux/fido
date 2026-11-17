@@ -78,6 +78,13 @@ type Device struct {
 	VendorID, ProductID uint16
 	// Name is what the device calls itself, for a person to read.
 	Name string
+	// Phys is the physical port the key sits in (HID_PHYS, e.g.
+	// "usb-0000:00:14.0-3/input0"). Unlike Path, which is numbered in the order
+	// the kernel met the devices, it does not change when another key is
+	// plugged in first, so it is what to give back as a stable identifier.
+	Phys string
+	// Serial is the device's unique string (HID_UNIQ), empty when it has none.
+	Serial string
 }
 
 // String names the device the way an error message should.
@@ -162,6 +169,10 @@ func parseUevent(s string) (Device, error) {
 			gotID = true
 		case strings.HasPrefix(line, "HID_NAME="):
 			d.Name = strings.TrimSpace(strings.TrimPrefix(line, "HID_NAME="))
+		case strings.HasPrefix(line, "HID_PHYS="):
+			d.Phys = strings.TrimSpace(strings.TrimPrefix(line, "HID_PHYS="))
+		case strings.HasPrefix(line, "HID_UNIQ="):
+			d.Serial = strings.TrimSpace(strings.TrimPrefix(line, "HID_UNIQ="))
 		}
 	}
 	if !gotID {
