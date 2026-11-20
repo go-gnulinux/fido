@@ -3,7 +3,7 @@ module github.com/go-gnulinux/fido
 go 1.27.3
 
 require (
-	github.com/go-authn/fido v0.6.4
+	github.com/go-authn/fido v0.13.1
 	golang.org/x/sys v0.50.0
 )
 
